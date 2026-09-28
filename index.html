@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VbsTools · VBScript for VS Code</title>
+<meta name="description" content="VbsTools：VS Code 的 VBScript 插件。能理解 COM 对象的智能提示、断点调试器、兼容 cscript 的脚本宿主。免费。">
+<meta property="og:title" content="VbsTools · VBScript for VS Code">
+<meta property="og:description" content="能理解 COM 对象的智能提示、断点调试器、兼容 cscript 的脚本宿主。免费。">
+<meta property="og:image" content="https://zachshen99.github.io/images/og.jpg">
+<meta property="og:url" content="https://zachshen99.github.io/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="images/icon.png">
+<style>
+:root {
+  --bg: #12141c;
+  --bg2: #181b25;
+  --panel: #1f2330;
+  --line: #2c3142;
+  --text: #e8e9ee;
+  --dim: #9aa0b0;
+  --yellow: #ffcc3c;
+  --blue: #0a84d6;
+  --green: #73c991;
+  --radius: 14px;
+  --sans: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  --mono: "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+img, video { display: block; max-width: 100%; height: auto; }
+code { font-family: var(--mono); font-size: .92em; background: #262b3a; padding: .1em .4em; border-radius: 6px; }
+
+/* language switch: every text exists twice */
+html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: none !important; }
+
+.wrap { width: min(1160px, 100% - 32px); margin: 0 auto; }
+
+/* nav */
+nav { position: sticky; top: 0; z-index: 10; background: rgba(18, 20, 28, .85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; font-size: 18px; }
+.brand img { width: 28px; height: 28px; }
+.links { display: flex; gap: 22px; margin-left: auto; font-size: 15px; }
+.links a { text-decoration: none; color: var(--dim); }
+.links a:hover { color: var(--text); }
+.lang { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 14px; }
+.lang:hover { border-color: var(--dim); }
+
+/* hero */
+.hero { position: relative; padding: 88px 0 40px; text-align: center; overflow: hidden; }
+.hero::before { content: ""; position: absolute; inset: 30% -10% -40%; background: radial-gradient(closest-side, rgba(10, 132, 214, .35), transparent); z-index: -1; }
+.eyebrow { display: inline-block; color: var(--yellow); border: 1px solid rgba(255, 204, 60, .4); border-radius: 999px; padding: 3px 14px; font-size: 14px; margin-bottom: 22px; }
+h1 { font-size: clamp(40px, 7vw, 76px); line-height: 1.12; margin: 0 0 20px; letter-spacing: -.01em; }
+h1 em { font-style: normal; color: var(--yellow); display: inline-block; }
+.lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--dim); max-width: 720px; margin: 0 auto 34px; }
+.cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; border: 1px solid var(--line); background: var(--panel); transition: transform .15s, border-color .15s; }
+.btn:hover { transform: translateY(-1px); border-color: var(--dim); }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.note { margin-top: 16px; font-size: 14px; color: var(--dim); }
+.shot { margin: 56px auto 0; border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, .55); max-width: min(1100px, 100%); }
+
+/* three hard things */
+.pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 70px 0 20px; }
+.pillar { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px; }
+.pillar b { display: block; font-size: 18px; margin-bottom: 6px; }
+.pillar span { color: var(--dim); font-size: 15px; }
+.pillar i { font-style: normal; font-family: var(--mono); color: var(--yellow); font-size: 14px; }
+
+/* sections */
+section { padding: 70px 0; }
+h2 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 10px; }
+.sub { color: var(--dim); margin: 0 0 44px; font-size: 17px; }
+.feature { display: grid; grid-template-columns: 5fr 7fr; gap: 48px; align-items: center; margin-bottom: 80px; }
+.feature:nth-child(even) .text { order: 2; }
+.feature h3 { font-size: 26px; margin: 0 0 12px; }
+.feature p { color: var(--dim); margin: 0 0 12px; }
+.feature ul { margin: 0; padding-left: 1.1em; color: var(--dim); }
+.feature li { margin: 4px 0; }
+.feature .media { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: 0 20px 50px rgba(0, 0, 0, .4); background: #1e1e1e; }
+.tag { display: inline-block; font-size: 13px; color: var(--yellow); margin-bottom: 8px; letter-spacing: .04em; }
+
+/* how it works */
+.how { background: var(--bg2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+.card video { width: 100%; aspect-ratio: 16 / 9; background: #1e1e1e; }
+.card .body { padding: 20px 22px 24px; }
+.card h3 { margin: 0 0 8px; font-size: 20px; }
+.card p { margin: 0; color: var(--dim); font-size: 15px; }
+
+/* video */
+.player { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+.player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.soon { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 8px; color: var(--dim); background: center / cover no-repeat url(images/og.jpg); }
+.soon::before { content: ""; position: absolute; inset: 0; background: rgba(18, 20, 28, .72); }
+.soon > * { position: relative; }
+.soon b { color: var(--text); font-size: 22px; }
+
+/* install */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: s; }
+.step { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; }
+.step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; margin-bottom: 12px; }
+.step b { display: block; margin-bottom: 6px; }
+.step p { margin: 0; color: var(--dim); font-size: 15px; }
+pre { background: #0c0e14; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: 14px; margin: 12px 0 0; }
+.faq { margin-top: 40px; color: var(--dim); }
+.faq b { color: var(--text); }
+
+.step, .feature > *, .card, .pillar { min-width: 0; }
+footer { border-top: 1px solid var(--line); padding: 34px 0 44px; color: var(--dim); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; }
+footer .right { margin-left: auto; display: flex; gap: 20px; }
+
+@media (max-width: 860px) {
+  .links { display: none; }
+  .lang { margin-left: auto; }
+  .pillars, .cards, .steps { grid-template-columns: 1fr; }
+  .feature { grid-template-columns: 1fr; gap: 22px; margin-bottom: 56px; }
+  .feature:nth-child(even) .text { order: 0; }
+  .hero { padding-top: 56px; }
+  footer .right { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="images/icon.png" alt="">VbsTools</a>
+    <div class="links">
+      <a href="#features"><span lang="zh">功能</span><span lang="en">Features</span></a>
+      <a href="#how"><span lang="zh">原理</span><span lang="en">How it works</span></a>
+      <a href="#video"><span lang="zh">视频</span><span lang="en">Video</span></a>
+      <a href="#install"><span lang="zh">安装</span><span lang="en">Install</span></a>
+      <a href="https://github.com/ZachShen99/VbsTools">GitHub</a>
+    </div>
+    <button class="lang" id="lang" type="button">English</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span lang="zh">VS Code 插件 · 免费</span><span lang="en">A free VS Code extension</span></div>
+    <h1>
+      <span lang="zh">VBScript，<em>也能打断点</em></span>
+      <span lang="en">VBScript, <em>now with breakpoints</em></span>
+    </h1>
+    <p class="lead">
+      <span lang="zh">能理解 COM 对象的智能提示、真正的断点调试器、兼容 cscript 的脚本宿主。让维护老脚本、自动化脚本和 WinCC 项目的人，也能用上现代编辑器。</span>
+      <span lang="en">IntelliSense that understands COM objects, a real debugger and a cscript-compatible script host — a modern editor for everyone who still maintains automation scripts and WinCC projects.</span>
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://marketplace.visualstudio.com/items?itemName=zach-shen.vbstools-vbscript">
+        <span lang="zh">在扩展商店安装</span><span lang="en">Get it on the Marketplace</span>
+      </a>
+      <a class="btn" href="vscode:extension/zach-shen.vbstools-vbscript">
+        <span lang="zh">在 VS Code 中打开</span><span lang="en">Open in VS Code</span>
+      </a>
+      <a class="btn" href="https://github.com/ZachShen99/VbsTools">GitHub</a>
+    </div>
+    <div class="note">
+      <span lang="zh">仅支持 Windows · 语法高亮在任何系统上都可用</span>
+      <span lang="en">Windows only · syntax highlighting works everywhere</span>
+    </div>
+    <img class="shot" src="images/hero-debug-excel.jpg" width="1600" height="940"
+         alt="Debugging a VBScript that drives Excel: breakpoint, variables and the Excel window">
+
+    <div class="pillars">
+      <div class="pillar">
+        <i>TypeLib</i>
+        <b lang="zh">读取 COM 类型库</b><b lang="en">Reads COM type libraries</b>
+        <span lang="zh">本机注册的每个组件都能补全，还会顺着代码推断类型。</span>
+        <span lang="en">Every registered component completes, and types flow through your code.</span>
+      </div>
+      <div class="pillar">
+        <i>ScriptHost</i>
+        <b lang="zh">重写的脚本宿主</b><b lang="en">A rewritten script host</b>
+        <span lang="zh">cscript 没有调试接口，于是从零实现了一个兼容的宿主。</span>
+        <span lang="en">cscript has no debugging interface, so a compatible host was written from scratch.</span>
+      </div>
+      <div class="pillar">
+        <i>Instrumentation</i>
+        <b lang="zh">插桩调试</b><b lang="en">Instrumented debugging</b>
+        <span lang="zh">每条语句前插入钩子，行号不变，不干扰脚本自己的错误处理。</span>
+        <span lang="en">A hook before every statement — same line numbers, your own error handling untouched.</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <h2><span lang="zh">功能</span><span lang="en">Features</span></h2>
+    <p class="sub"><span lang="zh">写、查、跑、调，都在 VS Code 里完成。</span><span lang="en">Write, check, run and debug — all inside VS Code.</span></p>
+
+    <div class="feature">
+      <div class="text">
+        <div class="tag">IntelliSense</div>
+        <h3><span lang="zh">能理解 COM 对象的智能提示</span><span lang="en">IntelliSense for COM objects</span></h3>
+        <p><span lang="zh">读取你电脑上注册的类型库：<code>CreateObject("</code> 列出所有 ProgID，对象后面列出方法和属性。</span>
+           <span lang="en">Reads the type libraries registered on your machine: <code>CreateObject("</code> lists every ProgID, and objects list their methods and properties.</span></p>
+        <ul>
+          <li lang="zh">链式调用、<code>For Each</code>、<code>With</code>、默认成员、函数返回值都能推断</li>
+          <li lang="en">Types flow through chains, <code>For Each</code>, <code>With</code>, default members and return values</li>
+          <li lang="zh">参数提示、悬停说明、参数名提示</li>
+          <li lang="en">Parameter info, hover and parameter name hints</li>
+          <li lang="zh">推断不出时，用 <code>' @type</code> 注释补上</li>
+          <li lang="en"><code>' @type</code> annotations where inference cannot know</li>
+        </ul>
+      </div>
+      <div class="media"><img src="images/intellisense.gif" loading="lazy" width="1265" height="735" alt="COM IntelliSense"></div>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <div class="tag">Debugger</div>
+        <h3><span lang="zh">真正的断点调试</span><span lang="en">A real debugger</span></h3>
+        <p><span lang="zh">按 F5 就能调试，不需要 launch.json。</span><span lang="en">Press F5 — no launch.json needed.</span></p>
+        <ul>
+          <li lang="zh">条件断点、命中次数、日志点；单步进入 / 跳过 / 跳出</li>
+          <li lang="en">Conditional breakpoints, hit counts, logpoints; step in / over / out</li>
+          <li lang="zh">变量、监视、调用栈，COM 对象可以层层展开</li>
+          <li lang="en">Variables, watch and call stack — COM objects expand level by level</li>
+          <li lang="zh">双击修改变量；调试控制台支持补全</li>
+          <li lang="en">Double-click to change a value; Debug Console with completion</li>
+        </ul>
+      </div>
+      <div class="media"><img src="images/debug.gif" loading="lazy" width="1265" height="713" alt="Debugging"></div>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <div class="tag">Diagnostics</div>
+        <h3><span lang="zh">边写边查错</span><span lang="en">Checks as you type</span></h3>
+        <p><span lang="zh">语法错误交给系统自带的 vbscript.dll 只编译、不运行，报出来的错误和真正运行时完全一致。</span>
+           <span lang="en">Syntax errors come from vbscript.dll itself — compiled, never run — so they match what a real run reports.</span></p>
+        <ul>
+          <li lang="zh">未声明的变量、不存在的过程、参数个数错误、未使用的变量</li>
+          <li lang="en">Undeclared variables, unknown procedures, wrong argument counts, unused variables</li>
+          <li lang="zh">Ctrl+. 一键修复；F12 转到定义、Shift+F12 查找引用、F2 重命名</li>
+          <li lang="en">Quick fixes with Ctrl+.; go to definition, find references, rename</li>
+        </ul>
+      </div>
+      <div class="media"><img src="images/diagnostics.gif" loading="lazy" width="1265" height="713" alt="Diagnostics"></div>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <div class="tag">WinCC</div>
+        <h3><span lang="zh">内置 WinCC V7 / V8 对象模型</span><span lang="en">WinCC V7 / V8 built in</span></h3>
+        <p><span lang="zh">在软件内部运行、没有注册类型库的脚本，也能补全：<code>HMIRuntime.Tags("x").Read</code>、事件过程里的 <code>Item.</code>……其他软件可以用 <code>*.vbstypes.json</code> 自己描述。</span>
+           <span lang="en">Scripts that run inside an application get completion too: <code>HMIRuntime.Tags("x").Read</code>, <code>Item.</code> in event procedures… Describe other applications with <code>*.vbstypes.json</code>.</span></p>
+      </div>
+      <div class="media"><img src="images/wincc.gif" loading="lazy" width="1265" height="713" alt="WinCC"></div>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <div class="tag">Code Library</div>
+        <h3><span lang="zh">代码库</span><span lang="en">Code Library</span></h3>
+        <p><span lang="zh">示例脚本随时预览、插入；把常用代码存成自己的片段，输入缩写就能展开。</span>
+           <span lang="en">Preview and insert sample scripts; keep your own snippets and expand them with a shortcut.</span></p>
+      </div>
+      <div class="media"><img src="images/library.gif" loading="lazy" width="1265" height="713" alt="Code Library"></div>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <div class="tag">Encoding</div>
+        <h3><span lang="zh">不再乱码</span><span lang="en">No more garbled text</span></h3>
+        <p><span lang="zh">cscript 只认 ANSI 和 UTF-16。ANSI 脚本自动用系统代码页打开；含中文的 UTF-8 脚本会提示一键另存。脚本宿主本身支持中文、日文甚至 emoji 的输入输出。</span>
+           <span lang="en">cscript only reads ANSI and UTF-16. ANSI scripts reopen with the system code page; UTF-8 scripts with non-ASCII text get a one-click fix. The script host itself reads and writes any Unicode, emoji included.</span></p>
+      </div>
+      <div class="media"><img src="images/encoding.gif" loading="lazy" width="1265" height="713" alt="Encoding"></div>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="wrap">
+    <h2><span lang="zh">它是怎么做到的</span><span lang="en">How it works</span></h2>
+    <p class="sub"><span lang="zh">三段动画，讲清楚背后的三件事。</span><span lang="en">Three short animations, three pieces of the puzzle.</span></p>
+    <div class="cards">
+      <div class="card">
+        <video controls muted playsinline preload="none" poster="images/poster-typelib.jpg" src="videos/typelib-inference.mp4"></video>
+        <div class="body">
+          <h3><span lang="zh">类型库 + 类型推断</span><span lang="en">Type libraries + inference</span></h3>
+          <p><span lang="zh">从 ProgID 找到注册表里的类型库，读出成员；再顺着代码推断：<code>fso → Folder → Files → File</code>。</span>
+             <span lang="en">From a ProgID to the registered type library and its members, then along your code: <code>fso → Folder → Files → File</code>.</span></p>
+        </div>
+      </div>
+      <div class="card">
+        <video controls muted playsinline preload="none" poster="images/poster-syntax.jpg" src="videos/syntax-check.mp4"></video>
+        <div class="body">
+          <h3><span lang="zh">只编译、不运行</span><span lang="en">Compiled, never run</span></h3>
+          <p><span lang="zh">语法检查直接调用 vbscript.dll 的解析器，引擎从不进入运行状态。</span>
+             <span lang="en">The syntax check calls vbscript.dll's own parser; the engine is never started.</span></p>
+        </div>
+      </div>
+      <div class="card">
+        <video controls muted playsinline preload="none" poster="images/poster-host.jpg" src="videos/script-host.mp4"></video>
+        <div class="body">
+          <h3><span lang="zh">重写的脚本宿主</span><span lang="en">A rewritten script host</span></h3>
+          <p><span lang="zh">加载系统的 vbscript.dll，从零实现 WScript 对象，与 cscript 逐项对照测试；Native AOT 编译，x64 / x86 两个版本。</span>
+             <span lang="en">Loads the system's vbscript.dll with a WScript object written from scratch and tested against cscript; Native AOT, x64 and x86.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="video">
+  <div class="wrap">
+    <h2><span lang="zh">介绍视频</span><span lang="en">Video</span></h2>
+    <p class="sub"><span lang="zh">六分钟看完全部功能和实现思路。</span><span lang="en">All the features and the ideas behind them (in Chinese).</span></p>
+    <!-- After publishing on Bilibili: put the BV id in data-bvid, e.g. data-bvid="BV1xx411c7mD" -->
+    <div class="player" id="player" data-bvid="">
+      <div class="soon">
+        <b lang="zh">视频即将发布</b><b lang="en">Coming soon</b>
+        <span lang="zh">敬请关注 B 站</span><span lang="en">on Bilibili</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="install">
+  <div class="wrap">
+    <h2><span lang="zh">安装</span><span lang="en">Install</span></h2>
+    <p class="sub"><span lang="zh">一分钟装好，不需要另外安装 .NET。</span><span lang="en">One minute; no .NET or anything else to install.</span></p>
+    <div class="steps">
+      <div class="step">
+        <b lang="zh">打开扩展视图</b><b lang="en">Open Extensions</b>
+        <p lang="zh">在 VS Code 中按 Ctrl+Shift+X。</p><p lang="en">Press Ctrl+Shift+X in VS Code.</p>
+      </div>
+      <div class="step">
+        <b lang="zh">搜索 VbsTools</b><b lang="en">Search for VbsTools</b>
+        <p lang="zh">点击安装。或者在命令行里：</p><p lang="en">Click Install. Or from a command line:</p>
+        <pre>code --install-extension zach-shen.vbstools-vbscript</pre>
+      </div>
+      <div class="step">
+        <b lang="zh">打开一个 .vbs 文件</b><b lang="en">Open a .vbs file</b>
+        <p lang="zh">按 F5 调试，Ctrl+F5 运行。欢迎页里有一步步的上手引导。</p>
+        <p lang="en">F5 debugs, Ctrl+F5 runs. The Welcome page has a step-by-step walkthrough.</p>
+      </div>
+    </div>
+    <div class="faq">
+      <p lang="zh"><b>.vbs 被识别成 "Visual Basic"？</b> VS Code 自带的 Visual Basic 支持也会认领 .vbs，在设置里加上：</p>
+      <p lang="en"><b>.vbs opens as "Visual Basic"?</b> VS Code's built-in Visual Basic support also claims .vbs. Add to your settings:</p>
+      <pre>"files.associations": { "*.vbs": "vbscript" }</pre>
+      <p lang="zh" style="margin-top:20px">遇到问题或有建议，欢迎到 <a href="https://github.com/ZachShen99/VbsTools/issues">GitHub Issues</a> 反馈。</p>
+      <p lang="en" style="margin-top:20px">Problems or ideas? <a href="https://github.com/ZachShen99/VbsTools/issues">GitHub Issues</a>.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Zach Shen · MIT License</span>
+    <div class="right">
+      <a href="https://marketplace.visualstudio.com/items?itemName=zach-shen.vbstools-vbscript">Marketplace</a>
+      <a href="https://github.com/ZachShen99/VbsTools">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement, btn = document.getElementById("lang");
+  function set(lang) {
+    root.dataset.lang = lang;
+    root.lang = lang === "zh" ? "zh-CN" : "en";
+    btn.textContent = lang === "zh" ? "English" : "中文";
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+  }
+  var saved = null;
+  try { saved = localStorage.getItem("lang"); } catch (e) {}
+  var q = new URLSearchParams(location.search).get("lang");
+  set(q === "en" || q === "zh" ? q : saved || ((navigator.language || "").toLowerCase().indexOf("zh") === 0 ? "zh" : "en"));
+  btn.addEventListener("click", function () { set(root.dataset.lang === "zh" ? "en" : "zh"); });
+
+  // Bilibili player once the BV id is filled in.
+  var player = document.getElementById("player"), bvid = player.dataset.bvid;
+  if (bvid) {
+    player.innerHTML = '<iframe src="https://player.bilibili.com/player.html?bvid=' + encodeURIComponent(bvid) +
+      '&page=1&autoplay=0&high_quality=1" allowfullscreen loading="lazy"></iframe>';
+  }
+})();
+</script>
+</body>
+</html>
