@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<title>404 · Zach's homepage</title>
+<link rel="icon" type="image/png" href="/images/avatar-64.png">
+<style>
+:root { --bg: #fbfbfd; --text: #1d1d1f; --dim: #86868b; --line: #d2d2d7; --accent: #0071e3; --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif; }
+@media (prefers-color-scheme: dark) { :root { --bg: #000; --text: #f5f5f7; --line: #424245; --accent: #2997ff; } }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: none !important; }
+@font-face { font-family: "Vice"; src: url(/fonts/mr-dafoe-zach.woff2) format("woff2"); font-display: swap; unicode-range: U+20, U+27, U+41, U+43, U+48, U+5a, U+61, U+63, U+65, U+67-68, U+6d, U+6f-70, U+73, U+7a; }
+main { width: min(640px, 100%); }
+.brand { display: inline-block; font: 400 34px/1 "Vice", "Brush Script MT", cursive; padding: 0 .1em .08em 0; margin-bottom: 22px; color: transparent;
+  background: linear-gradient(180deg, #ff5fb0 12%, #ff9a62 88%); -webkit-background-clip: text; background-clip: text;
+  filter: drop-shadow(.035em .035em 0 #00e5ff) drop-shadow(0 0 .12em rgba(255, 46, 147, .65)); text-decoration: none; }
+.term { background: #0b0d10; color: #e6e6e6; border: 1px solid #2a2e35; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, .35);
+  font: 15px/1.6 ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, "PingFang SC", "Microsoft YaHei", monospace; }
+.bar { display: flex; gap: 8px; align-items: center; padding: 11px 14px; background: #15181d; border-bottom: 1px solid #2a2e35; }
+.bar i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
+.bar i:nth-child(2) { background: #febc2e; } .bar i:nth-child(3) { background: #28c840; }
+.body { padding: 16px 18px 20px; min-height: 190px; word-break: break-all; }
+.g { color: #33ff66; } .b { color: #6cb6ff; } .r { color: #ff6b6b; } .d { color: #7d8590; }
+.ln { opacity: 0; animation: show .01s forwards; }
+.ln:nth-child(1) { animation-delay: .3s; } .ln:nth-child(2) { animation-delay: .9s; } .ln:nth-child(3) { animation-delay: 1.5s; } .ln:nth-child(4) { animation-delay: 1.9s; }
+@keyframes show { to { opacity: 1; } }
+.caret { display: inline-block; width: .6em; height: 1.1em; vertical-align: -.2em; background: #33ff66; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.go { display: inline-block; margin-top: 26px; padding: 11px 26px; border-radius: 980px; background: var(--accent); color: #fff; text-decoration: none; font-size: 16px; }
+.go:hover { opacity: .88; }
+@media (prefers-reduced-motion: reduce) { .ln { opacity: 1; animation: none; } .caret { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="/">Zach's homepage</a>
+  <div class="term" role="img" aria-label="404">
+    <div class="bar"><i></i><i></i><i></i></div>
+    <div class="body">
+      <div class="ln"><span class="g">zach@home</span>:<span class="b">~</span>$ cd <span id="p">/</span></div>
+      <div class="ln r">-bash: cd: <span id="p2">/</span>: <span lang="zh">没有那个文件或目录</span><span lang="en">No such file or directory</span></div>
+      <div class="ln d"><span lang="zh">404：这个页面不存在，或者已经被我挪走了。</span><span lang="en">404: this page does not exist, or I moved it.</span></div>
+      <div class="ln"><span class="g">zach@home</span>:<span class="b">~</span>$ <span class="caret"></span></div>
+    </div>
+  </div>
+  <a class="go" href="/"><span lang="zh">回首页</span><span lang="en">Back to the homepage</span></a>
+</main>
+<script>
+(function () {
+  var path = location.pathname + location.search, saved = null;
+  try { saved = localStorage.getItem("lang"); } catch (e) {}
+  var lang = saved || ((navigator.language || "").toLowerCase().indexOf("zh") === 0 ? "zh" : "en");
+  document.documentElement.dataset.lang = lang; document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+  document.getElementById("p").textContent = path; document.getElementById("p2").textContent = path;
+})();
+</script>
+</body>
+</html>

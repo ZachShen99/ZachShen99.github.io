@@ -3,392 +3,396 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VbsTools · VBScript for VS Code</title>
-<meta name="description" content="VbsTools：VS Code 的 VBScript 插件。能理解 COM 对象的智能提示、断点调试器、兼容 cscript 的脚本宿主。免费。">
-<meta property="og:title" content="VbsTools · VBScript for VS Code">
-<meta property="og:description" content="能理解 COM 对象的智能提示、断点调试器、兼容 cscript 的脚本宿主。免费。">
-<meta property="og:image" content="https://zachshen99.github.io/images/og.jpg">
+<title>Zach</title>
+<meta name="description" content="Zach 的个人主页：几个 VS Code 插件和一个安卓应用。 / Zach's homepage: a few VS Code extensions and an Android app.">
+<meta property="og:title" content="Zach">
+<meta property="og:description" content="VS Code 插件和安卓应用。 / VS Code extensions and an Android app.">
+<meta property="og:image" content="https://zachshen99.github.io/images/og-home.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:url" content="https://zachshen99.github.io/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="images/icon.png">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/png" href="images/avatar-64.png">
+<link rel="apple-touch-icon" href="images/avatar-180.png">
+<script>document.documentElement.classList.add("js");</script>
 <style>
 :root {
-  --bg: #12141c;
-  --bg2: #181b25;
-  --panel: #1f2330;
-  --line: #2c3142;
-  --text: #e8e9ee;
-  --dim: #9aa0b0;
-  --yellow: #ffcc3c;
-  --blue: #0a84d6;
-  --green: #73c991;
-  --radius: 14px;
-  --sans: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
-  --mono: "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
+  --bg: #fbfbfd;
+  --bg2: #f5f5f7;
+  --text: #1d1d1f;
+  --dim: #86868b;
+  --line: #d2d2d7;
+  --accent: #0071e3;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #000; --bg2: #161617; --text: #f5f5f7; --dim: #86868b; --line: #424245; --accent: #2997ff; }
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.7; -webkit-font-smoothing: antialiased; }
-a { color: inherit; }
-img, video { display: block; max-width: 100%; height: auto; }
-code { font-family: var(--mono); font-size: .92em; background: #262b3a; padding: .1em .4em; border-radius: 6px; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; text-decoration: none; }
 
-/* language switch: every text exists twice */
+/* every text exists twice; show the active language only */
 html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: none !important; }
 
-.wrap { width: min(1160px, 100% - 32px); margin: 0 auto; }
+.wrap { width: min(980px, 100% - 48px); margin: 0 auto; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* nav */
-nav { position: sticky; top: 0; z-index: 10; background: rgba(18, 20, 28, .85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; font-size: 18px; }
-.brand img { width: 28px; height: 28px; }
-.links { display: flex; gap: 22px; margin-left: auto; font-size: 15px; }
-.links a { text-decoration: none; color: var(--dim); }
-.links a:hover { color: var(--text); }
-.lang { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 14px; }
-.lang:hover { border-color: var(--dim); }
+nav { position: fixed; inset: 0 0 auto; z-index: 10; height: 52px; background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid transparent; transition: border-color .3s; }
+nav.scrolled { border-bottom-color: var(--line); }
+nav .wrap { height: 100%; display: flex; align-items: center; gap: 28px; font-size: 13px; }
+.brand { font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+.links { display: flex; gap: 28px; margin-left: auto; }
+.links a, .lang { color: var(--dim); transition: color .2s; }
+.links a:hover, .links a.on, .lang:hover { color: var(--text); }
+.lang { background: none; border: 0; font: inherit; cursor: pointer; padding: 0; }
 
-/* hero */
-.hero { position: relative; padding: 88px 0 40px; text-align: center; overflow: hidden; }
-.hero::before { content: ""; position: absolute; inset: 30% -10% -40%; background: radial-gradient(closest-side, rgba(10, 132, 214, .35), transparent); z-index: -1; }
-.eyebrow { display: inline-block; color: var(--yellow); border: 1px solid rgba(255, 204, 60, .4); border-radius: 999px; padding: 3px 14px; font-size: 14px; margin-bottom: 22px; }
-h1 { font-size: clamp(40px, 7vw, 76px); line-height: 1.12; margin: 0 0 20px; letter-spacing: -.01em; }
-h1 em { font-style: normal; color: var(--yellow); display: inline-block; }
-.lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--dim); max-width: 720px; margin: 0 auto 34px; }
-.cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; border: 1px solid var(--line); background: var(--panel); transition: transform .15s, border-color .15s; }
-.btn:hover { transform: translateY(-1px); border-color: var(--dim); }
-.btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
-.note { margin-top: 16px; font-size: 14px; color: var(--dim); }
-.shot { margin: 56px auto 0; border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, .55); max-width: min(1100px, 100%); }
+/* hero: sticky, shrinks and fades while you scroll away */
+.hero { height: 140vh; position: relative; }
+.hero-in { --d: clamp(200px, min(44vw, 46vh), 400px); position: sticky; top: 0; height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr); place-content: center; text-align: center; padding: 0 24px; will-change: transform, opacity; }
+h1 { margin: 0; font-size: clamp(56px, 12vw, 148px); line-height: 1.02; font-weight: 700; letter-spacing: -.045em; }
+.avatar { position: relative; width: var(--d); aspect-ratio: 1; margin: 0 auto; animation: avatarin 1s .05s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes avatarin { from { opacity: 0; transform: translateY(5%) scale(.9); } to { opacity: 1; transform: none; } }
+.avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+#avatarCv { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; }
+.hello { font-size: clamp(19px, 2.6vw, 28px); font-weight: 600; margin: 0 0 8px; color: var(--dim); }
+.hint { position: absolute; left: 50%; bottom: 36px; width: 22px; height: 22px; margin-left: -11px; border-right: 2px solid var(--dim); border-bottom: 2px solid var(--dim); transform: rotate(45deg); animation: bob 2s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(8px) rotate(45deg); } }
 
-/* three hard things */
-.pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 70px 0 20px; }
-.pillar { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px; }
-.pillar b { display: block; font-size: 18px; margin-bottom: 6px; }
-.pillar span { color: var(--dim); font-size: 15px; }
-.pillar i { font-style: normal; font-family: var(--mono); color: var(--yellow); font-size: 14px; }
 
-/* sections */
-section { padding: 70px 0; }
-h2 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 10px; }
-.sub { color: var(--dim); margin: 0 0 44px; font-size: 17px; }
-.feature { display: grid; grid-template-columns: 5fr 7fr; gap: 48px; align-items: center; margin-bottom: 80px; }
-.feature:nth-child(even) .text { order: 2; }
-.feature h3 { font-size: 26px; margin: 0 0 12px; }
-.feature p { color: var(--dim); margin: 0 0 12px; }
-.feature ul { margin: 0; padding-left: 1.1em; color: var(--dim); }
-.feature li { margin: 4px 0; }
-.feature .media { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: 0 20px 50px rgba(0, 0, 0, .4); background: #1e1e1e; }
-.tag { display: inline-block; font-size: 13px; color: var(--yellow); margin-bottom: 8px; letter-spacing: .04em; }
+/* the name: handwritten, Vice City neon (font: Mr Dafoe, SIL OFL, subset to the letters of the name and "zach's homepage") */
+@font-face { font-family: "Vice"; src: url(fonts/mr-dafoe-zach.woff2) format("woff2"); font-display: swap; unicode-range: U+20, U+27, U+41, U+43, U+48, U+5a, U+61, U+63, U+65, U+67-68, U+6d, U+6f-70, U+73, U+7a; }
+.vice { font-family: "Vice", "Mr Dafoe", "Brush Script MT", "Segoe Script", cursive; font-weight: 400; letter-spacing: 0; text-transform: none;
+  background: linear-gradient(180deg, #ff5fb0 12%, #ff9a62 88%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(.035em .035em 0 #00e5ff) drop-shadow(0 0 .12em rgba(255, 46, 147, .65)); }
+/* the big name is drawn stroke by stroke, like the Vice City title: z, a, c, h, then a line underneath */
+h1.sig { --w: clamp(280px, min(74vw, 80vh), 720px); width: var(--w); font-size: calc(var(--w) / 22); margin: calc(var(--d) * -.4) auto 4px; line-height: 0;
+  filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 .8em rgba(255, 46, 147, .65)); animation: signflicker .55s 1s, signeon 4.5s ease-in-out 1.6s infinite alternate; }
+h1.sig svg { display: block; width: 100%; height: auto; overflow: visible; }
+.sig text { font-family: "Vice", "Mr Dafoe", "Brush Script MT", "Segoe Script", cursive; }
+.sig .mk { stroke-dasharray: 1 2; stroke-dashoffset: 1.04; animation: sigdraw var(--d) var(--t) cubic-bezier(.5, .1, .3, 1) both; }
+.sig .glint { transform: translateX(0) skewX(-18deg); animation: sigglint .55s 1.02s ease-in-out both; }
+.js .sig:not(.go), .js .sig:not(.go) .mk, .js .sig:not(.go) .glint { animation-play-state: paused; }
+@keyframes sigglint { from { transform: translateX(0) skewX(-18deg); } to { transform: translateX(1150px) skewX(-18deg); } }
+@keyframes signflicker {
+  0%   { filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 .1em rgba(255, 46, 147, .15)); }
+  14%  { filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 1.7em rgba(255, 46, 147, .95)); }
+  27%  { filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 .1em rgba(255, 46, 147, .2)); }
+  44%  { filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 1.5em rgba(255, 46, 147, .9)); }
+  58%  { filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 .35em rgba(255, 46, 147, .4)); }
+  100% { filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 .8em rgba(255, 46, 147, .65)); }
+}
+@keyframes sigdraw { from { stroke-dashoffset: 1.04; } to { stroke-dashoffset: 0; } }
+@keyframes signeon {
+  from { filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 .5em rgba(255, 46, 147, .5)); }
+  to   { filter: drop-shadow(.28em .28em 0 #00e5ff) drop-shadow(0 0 1.4em rgba(255, 46, 147, .85)); }
+}
+.brand.vice { font-size: 28px; white-space: nowrap; line-height: 1; padding: 0 .1em .08em 0; }
+.hero-in::before { content: ""; position: absolute; inset: 12% 8%; z-index: -1; pointer-events: none; filter: blur(40px);
+  background: radial-gradient(closest-side at 32% 55%, rgba(255, 46, 147, .22), transparent 70%), radial-gradient(closest-side at 70% 48%, rgba(0, 229, 255, .16), transparent 70%); }
 
-/* how it works */
-.how { background: var(--bg2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
-.card video { width: 100%; aspect-ratio: 16 / 9; background: #1e1e1e; }
-.card .body { padding: 20px 22px 24px; }
-.card h3 { margin: 0 0 8px; font-size: 20px; }
-.card p { margin: 0; color: var(--dim); font-size: 15px; }
+/* terminal */
+.term-sec { position: relative; height: calc(100vh + 5 * 60vh); }
+.term-stick { position: sticky; top: 52px; height: calc(100vh - 52px); display: flex; align-items: center; }
+.term-stick .wrap { width: min(1040px, 100% - 32px); }
+html:not(.js) .term-sec { display: none; }
+.term { --fg: #e6e6e6; --acc: #33ff66; --glow: 0; position: relative; border-radius: 14px; background: rgba(11, 13, 16, .92); border: 1px solid #2a2e35; overflow: hidden; color: var(--fg);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .45), 0 0 calc(70px * var(--glow)) color-mix(in srgb, var(--acc) 26%, transparent); transform-origin: 50% 80%; will-change: transform, opacity;
+  font: 14px/1.55 ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, "PingFang SC", "Microsoft YaHei", monospace; }
+.term-bar { display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: #15181d; border-bottom: 1px solid #2a2e35; }
+.term-bar i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
+.term-bar i:nth-child(2) { background: #febc2e; }
+.term-bar i:nth-child(3) { background: #28c840; }
+.term-bar span { flex: 1; text-align: center; color: #8b929c; font-size: 12.5px; margin-right: 44px; }
+.term-body { position: relative; height: clamp(300px, calc(100vh - 52px - 41px - 120px), 640px); overflow-y: auto; overflow-x: hidden; padding: 14px 16px 18px; cursor: text; text-shadow: 0 0 6px color-mix(in srgb, var(--fg) 35%, transparent); scrollbar-width: thin; scrollbar-color: #2a2e35 transparent; }
+.term::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px); }
+.ln { white-space: pre-wrap; word-break: break-word; min-height: 1.55em; }
+.ln a { text-decoration: underline; text-underline-offset: 3px; }
+.ln.ind { padding-left: 2ch; text-indent: -2ch; }
+.g { color: var(--acc); } .b { color: #6cb6ff; font-weight: 700; } .c { color: #56d4dd; } .y { color: #e5c07b; } .r { color: #ff6b6b; } .m { color: #d291ff; } .d { color: #7d8590; }
+.term-line { display: flex; align-items: baseline; }
+#termPs { white-space: pre; }
+#termIn { flex: 1; min-width: 0; background: none; border: 0; outline: 0; padding: 0; margin: 0; color: inherit; font: inherit; text-shadow: inherit; caret-color: var(--acc); caret-shape: block; }
+.term.busy .term-line { opacity: .35; }
+.nf { display: flex; gap: 22px; margin: 4px 0; flex-wrap: wrap; }
+.art { font-size: 11px; line-height: 1; letter-spacing: 0; white-space: pre; flex: none; }
+.art div { height: 1em; white-space: pre; }
+.nf-info { min-width: 0; align-self: center; }
+#termFx { position: absolute; left: 0; width: 100%; pointer-events: none; }
+.term.glitch { animation: glitch .6s steps(2, end); }
+@keyframes glitch {
+  0% { transform: translate(0); filter: none; } 15% { transform: translate(-4px, 1px); filter: hue-rotate(90deg) saturate(2); }
+  30% { transform: translate(5px, -2px); filter: hue-rotate(-60deg); } 45% { transform: translate(-3px, 0); filter: invert(.15); }
+  60% { transform: translate(2px, 2px); filter: hue-rotate(160deg); } 100% { transform: translate(0); filter: none; }
+}
+.dots { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+.dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 4px; background: var(--line); cursor: pointer; transition: width .3s, background .3s; }
+.dots button:hover { background: var(--dim); }
+.dots button.on { width: 26px; background: #33ff66; }
+/* the toy Tk window that "wish" opens inside the terminal (classic grey look) */
+.tkwin { position: absolute; z-index: 4; min-width: 200px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow: auto; background: #d9d9d9; color: #000; border: 1px solid #555; box-shadow: 0 12px 34px rgba(0, 0, 0, .55); font: 13px/1.3 Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; text-shadow: none; }
+.tkbar { display: flex; align-items: center; justify-content: space-between; padding: 3px 4px 3px 9px; background: linear-gradient(#5b7fb4, #34548a); color: #fff; font-weight: 600; cursor: move; user-select: none; touch-action: none; }
+.tkx { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 3px; background: rgba(255, 255, 255, .18); color: #fff; font: 16px/18px Arial, sans-serif; cursor: pointer; }
+.tkx:hover { background: #d9534f; }
+.tkbody { position: relative; display: flex; flex-direction: column; padding: 10px; min-height: 40px; touch-action: none; }
+.tkbody * { box-sizing: border-box; }
+.tk-label { padding: 2px 4px; white-space: pre-wrap; }
+.tk-button { font: inherit; padding: 3px 10px; background: #ececec; color: #000; border: 1px solid #888; border-radius: 2px; cursor: pointer; box-shadow: inset 1px 1px #fff; }
+.tk-button:active { background: #c8c8c8; box-shadow: inset 1px 1px #888; }
+.tk-button:disabled { color: #888; cursor: default; }
+.tk-entry { font: inherit; background: #fff; color: #000; border: 2px inset #aaa; padding: 2px 4px; min-width: 0; }
+.tk-check { display: flex; align-items: center; gap: 6px; }
+.tk-scale { display: flex; align-items: center; gap: 8px; }
+.tk-scale input { width: 160px; }
+.tk-scale input.vert { writing-mode: vertical-lr; direction: rtl; width: auto; height: 120px; }
+.tk-frame { min-width: 4px; min-height: 4px; }
+.tkbody [data-relief="groove"], .tkbody [data-relief="ridge"] { border: 2px groove #aaa; }
+.tkbody [data-relief="sunken"] { border: 2px inset #aaa; }
+.tkbody [data-relief="raised"] { border: 2px outset #eee; }
+.tkbody [data-relief="solid"] { border: 1px solid #000; }
+.tk-labelframe { border: 2px groove #aaa; padding: 6px 8px 8px; margin: 0; min-width: 0; }
+.tk-labelframe legend { padding: 0 4px; }
+.tk-canvas { display: block; background: #fff; border: 1px solid #888; touch-action: none; }
+.tk-modal { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(0, 0, 0, .3); }
+.tk-modal-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 20px; background: #d9d9d9; border: 1px solid #555; box-shadow: 0 6px 20px rgba(0, 0, 0, .4); }
+.term-hint { text-align: center; color: var(--dim); font-size: 14px; margin: 10px 0 0; }
+.term-hint code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--bg2); padding: 2px 7px; border-radius: 6px; color: var(--text); }
+@media (min-width: 900px) { .term { font-size: 16px; } .art { font-size: 12px; } }
+@media (max-width: 760px) { .term { font-size: 12.5px; } .art { font-size: 8.5px; } .term-body { padding: 12px 12px 14px; } }
 
-/* video */
-.player { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
-.player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.soon { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 8px; color: var(--dim); background: center / cover no-repeat url(images/og.jpg); }
-.soon::before { content: ""; position: absolute; inset: 0; background: rgba(18, 20, 28, .72); }
-.soon > * { position: relative; }
-.soon b { color: var(--text); font-size: 22px; }
+footer { position: relative; border-top: 1px solid var(--line); padding: 20px 0 28px; color: var(--dim); font-size: 12px; }
 
-/* install */
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: s; }
-.step { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; }
-.step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; margin-bottom: 12px; }
-.step b { display: block; margin-bottom: 6px; }
-.step p { margin: 0; color: var(--dim); font-size: 15px; }
-pre { background: #0c0e14; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: 14px; margin: 12px 0 0; }
-.faq { margin-top: 40px; color: var(--dim); }
-.faq b { color: var(--text); }
-
-.step, .feature > *, .card, .pillar { min-width: 0; }
-footer { border-top: 1px solid var(--line); padding: 34px 0 44px; color: var(--dim); font-size: 14px; }
-footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; }
-footer .right { margin-left: auto; display: flex; gap: 20px; }
-
-@media (max-width: 860px) {
+@media (max-width: 760px) {
   .links { display: none; }
   .lang { margin-left: auto; }
-  .pillars, .cards, .steps { grid-template-columns: 1fr; }
-  .feature { grid-template-columns: 1fr; gap: 22px; margin-bottom: 56px; }
-  .feature:nth-child(even) .text { order: 0; }
-  .hero { padding-top: 56px; }
-  footer .right { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hint, h1.sig, .avatar { animation: none; }
+  .sig .mk { animation: none; stroke-dashoffset: 0; }
+  .sig .glint { animation: none; opacity: 0; }
 }
 </style>
 </head>
 <body>
 
-<nav>
+<canvas id="avatarCv" hidden aria-hidden="true"></canvas>
+
+<nav id="nav">
   <div class="wrap">
-    <a class="brand" href="#"><img src="images/icon.png" alt="">VbsTools</a>
+    <a class="brand vice" href="#top">Zach's homepage</a>
     <div class="links">
-      <a href="#features"><span lang="zh">功能</span><span lang="en">Features</span></a>
-      <a href="#how"><span lang="zh">原理</span><span lang="en">How it works</span></a>
-      <a href="#video"><span lang="zh">视频</span><span lang="en">Video</span></a>
-      <a href="#install"><span lang="zh">安装</span><span lang="en">Install</span></a>
-      <a href="https://github.com/ZachShen99/VbsTools">GitHub</a>
+      <a href="#terminal" data-scene="1"><span lang="zh">关于</span><span lang="en">About</span></a>
+      <a href="#terminal" data-scene="3"><span lang="zh">项目</span><span lang="en">Work</span></a>
+      <a href="#terminal" data-scene="4"><span lang="zh">联系</span><span lang="en">Contact</span></a>
     </div>
     <button class="lang" id="lang" type="button">English</button>
   </div>
 </nav>
 
-<header class="hero">
-  <div class="wrap">
-    <div class="eyebrow"><span lang="zh">VS Code 插件 · 免费</span><span lang="en">A free VS Code extension</span></div>
-    <h1>
-      <span lang="zh">VBScript，<em>也能打断点</em></span>
-      <span lang="en">VBScript, <em>now with breakpoints</em></span>
+<header class="hero" id="top">
+  <div class="hero-in" id="heroIn">
+    <div>
+      <p class="hello"><span lang="zh">你好，我是</span><span lang="en">Hi, I’m</span></p>
+      <div class="avatar" id="avatar">
+        <img src="images/avatar-flat.png" width="640" height="640" alt="Zach">
+      </div>
+      <h1 class="sig" id="sig">
+      <span class="sr">Zach</span>
+      <svg viewBox="-30 50 880 380" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="sigGrad" x1="0" y1="0" x2="0" y2="1"><stop offset=".12" stop-color="#ff5fb0"/><stop offset=".88" stop-color="#ff9a62"/></linearGradient>
+          <mask id="sigText" maskUnits="userSpaceOnUse" x="-30" y="50" width="880" height="380"><g class="strokes" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+            <path class="mk" pathLength="1" d="M 72 130 C 150 120, 240 98, 340 104" stroke-width="78" style="--t:0.091s;--d:0.098s"/>
+            <path class="mk" pathLength="1" d="M 330 118 C 270 150, 200 185, 150 220 C 100 255, 50 285, 8 322" stroke-width="76" style="--t:0.189s;--d:0.088s"/>
+            <path class="mk" pathLength="1" d="M 8 328 C 80 318, 170 312, 252 334" stroke-width="84" style="--t:0.277s;--d:0.067s"/>
+            <path class="mk" pathLength="1" d="M 240 336 C 275 285, 325 232, 378 208" stroke-width="58" style="--t:0.344s;--d:0.062s"/>
+            <path class="mk" pathLength="1" d="M 402 214 C 386 250, 362 285, 340 330" stroke-width="68" style="--t:0.406s;--d:0.052s"/>
+            <path class="mk" pathLength="1" d="M 246 340 C 276 334, 302 320, 332 300" stroke-width="64" style="--t:0.457s;--d:0.036s"/>
+            <path class="mk" pathLength="1" d="M 336 342 C 380 326, 422 292, 456 258" stroke-width="60" style="--t:0.493s;--d:0.052s"/>
+            <path class="mk" pathLength="1" d="M 508 250 C 534 249, 561 242, 558 226 C 550 204, 508 202, 468 226 C 432 252, 410 300, 414 326 C 420 350, 465 345, 505 332 C 550 316, 600 275, 645 232" stroke-width="66" style="--t:0.545s;--d:0.109s"/>
+            <path class="mk" pathLength="1" d="M 548 342 C 600 270, 700 160, 766 94" stroke-width="64" style="--t:0.654s;--d:0.077s"/>
+            <path class="mk" pathLength="1" d="M 600 285 C 640 250, 675 222, 700 220 C 690 245, 665 285, 636 332" stroke-width="62" style="--t:0.731s;--d:0.073s"/>
+            <path class="mk" pathLength="1" d="M 646 336 C 700 306, 760 262, 802 222" stroke-width="62" style="--t:0.803s;--d:0.052s"/>
+          </g></mask>
+          <mask id="sigLine" maskUnits="userSpaceOnUse" x="-30" y="50" width="880" height="380"><g fill="none" stroke="#fff" stroke-linecap="round">
+            <path class="mk" pathLength="1" d="M 14 394 C 300 374, 600 372, 844 340" stroke-width="56" style="--t:0.891s;--d:0.109s"/>
+          </g></mask>
+          <linearGradient id="sigGlint" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+          <mask id="sigGlyph" maskUnits="userSpaceOnUse" x="-30" y="50" width="880" height="380"><text x="50" y="340" font-size="400" fill="#fff">Zach</text><path d="M 20 396 C 300 368, 600 364, 836 338 C 600 380, 300 390, 20 396 Z" fill="#fff"/></mask>
+        </defs>
+        <text x="50" y="340" font-size="400" fill="url(#sigGrad)" mask="url(#sigText)">Zach</text>
+        <path d="M 20 396 C 300 368, 600 364, 836 338 C 600 380, 300 390, 20 396 Z" fill="url(#sigGrad)" mask="url(#sigLine)"/>
+        <g mask="url(#sigGlyph)"><rect class="glint" x="-170" y="70" width="130" height="340" fill="url(#sigGlint)"/></g>
+      </svg>
     </h1>
-    <p class="lead">
-      <span lang="zh">能理解 COM 对象的智能提示、真正的断点调试器、兼容 cscript 的脚本宿主。让维护老脚本、自动化脚本和 WinCC 项目的人，也能用上现代编辑器。</span>
-      <span lang="en">IntelliSense that understands COM objects, a real debugger and a cscript-compatible script host — a modern editor for everyone who still maintains automation scripts and WinCC projects.</span>
-    </p>
-    <div class="cta">
-      <a class="btn primary" href="https://marketplace.visualstudio.com/items?itemName=zach-shen.vbstools-vbscript">
-        <span lang="zh">在扩展商店安装</span><span lang="en">Get it on the Marketplace</span>
-      </a>
-      <a class="btn" href="vscode:extension/zach-shen.vbstools-vbscript">
-        <span lang="zh">在 VS Code 中打开</span><span lang="en">Open in VS Code</span>
-      </a>
-      <a class="btn" href="https://github.com/ZachShen99/VbsTools">GitHub</a>
     </div>
-    <div class="note">
-      <span lang="zh">仅支持 Windows · 语法高亮在任何系统上都可用</span>
-      <span lang="en">Windows only · syntax highlighting works everywhere</span>
-    </div>
-    <img class="shot" src="images/hero-debug-excel.jpg" width="1600" height="940"
-         alt="Debugging a VBScript that drives Excel: breakpoint, variables and the Excel window">
-
-    <div class="pillars">
-      <div class="pillar">
-        <i>TypeLib</i>
-        <b lang="zh">读取 COM 类型库</b><b lang="en">Reads COM type libraries</b>
-        <span lang="zh">本机注册的每个组件都能补全，还会顺着代码推断类型。</span>
-        <span lang="en">Every registered component completes, and types flow through your code.</span>
-      </div>
-      <div class="pillar">
-        <i>ScriptHost</i>
-        <b lang="zh">重写的脚本宿主</b><b lang="en">A rewritten script host</b>
-        <span lang="zh">cscript 没有调试接口，于是从零实现了一个兼容的宿主。</span>
-        <span lang="en">cscript has no debugging interface, so a compatible host was written from scratch.</span>
-      </div>
-      <div class="pillar">
-        <i>Instrumentation</i>
-        <b lang="zh">插桩调试</b><b lang="en">Instrumented debugging</b>
-        <span lang="zh">每条语句前插入钩子，行号不变，不干扰脚本自己的错误处理。</span>
-        <span lang="en">A hook before every statement — same line numbers, your own error handling untouched.</span>
-      </div>
-    </div>
+    <i class="hint" aria-hidden="true"></i>
   </div>
 </header>
 
-<section id="features">
-  <div class="wrap">
-    <h2><span lang="zh">功能</span><span lang="en">Features</span></h2>
-    <p class="sub"><span lang="zh">写、查、跑、调，都在 VS Code 里完成。</span><span lang="en">Write, check, run and debug — all inside VS Code.</span></p>
-
-    <div class="feature">
-      <div class="text">
-        <div class="tag">IntelliSense</div>
-        <h3><span lang="zh">能理解 COM 对象的智能提示</span><span lang="en">IntelliSense for COM objects</span></h3>
-        <p><span lang="zh">读取你电脑上注册的类型库：<code>CreateObject("</code> 列出所有 ProgID，对象后面列出方法和属性。</span>
-           <span lang="en">Reads the type libraries registered on your machine: <code>CreateObject("</code> lists every ProgID, and objects list their methods and properties.</span></p>
-        <ul>
-          <li lang="zh">链式调用、<code>For Each</code>、<code>With</code>、默认成员、函数返回值都能推断</li>
-          <li lang="en">Types flow through chains, <code>For Each</code>, <code>With</code>, default members and return values</li>
-          <li lang="zh">参数提示、悬停说明、参数名提示</li>
-          <li lang="en">Parameter info, hover and parameter name hints</li>
-          <li lang="zh">推断不出时，用 <code>' @type</code> 注释补上</li>
-          <li lang="en"><code>' @type</code> annotations where inference cannot know</li>
-        </ul>
-      </div>
-      <div class="media"><img src="images/intellisense.gif" loading="lazy" width="1265" height="735" alt="COM IntelliSense"></div>
-    </div>
-
-    <div class="feature">
-      <div class="text">
-        <div class="tag">Debugger</div>
-        <h3><span lang="zh">真正的断点调试</span><span lang="en">A real debugger</span></h3>
-        <p><span lang="zh">按 F5 就能调试，不需要 launch.json。</span><span lang="en">Press F5 — no launch.json needed.</span></p>
-        <ul>
-          <li lang="zh">条件断点、命中次数、日志点；单步进入 / 跳过 / 跳出</li>
-          <li lang="en">Conditional breakpoints, hit counts, logpoints; step in / over / out</li>
-          <li lang="zh">变量、监视、调用栈，COM 对象可以层层展开</li>
-          <li lang="en">Variables, watch and call stack — COM objects expand level by level</li>
-          <li lang="zh">双击修改变量；调试控制台支持补全</li>
-          <li lang="en">Double-click to change a value; Debug Console with completion</li>
-        </ul>
-      </div>
-      <div class="media"><img src="images/debug.gif" loading="lazy" width="1265" height="713" alt="Debugging"></div>
-    </div>
-
-    <div class="feature">
-      <div class="text">
-        <div class="tag">Diagnostics</div>
-        <h3><span lang="zh">边写边查错</span><span lang="en">Checks as you type</span></h3>
-        <p><span lang="zh">语法错误交给系统自带的 vbscript.dll 只编译、不运行，报出来的错误和真正运行时完全一致。</span>
-           <span lang="en">Syntax errors come from vbscript.dll itself — compiled, never run — so they match what a real run reports.</span></p>
-        <ul>
-          <li lang="zh">未声明的变量、不存在的过程、参数个数错误、未使用的变量</li>
-          <li lang="en">Undeclared variables, unknown procedures, wrong argument counts, unused variables</li>
-          <li lang="zh">Ctrl+. 一键修复；F12 转到定义、Shift+F12 查找引用、F2 重命名</li>
-          <li lang="en">Quick fixes with Ctrl+.; go to definition, find references, rename</li>
-        </ul>
-      </div>
-      <div class="media"><img src="images/diagnostics.gif" loading="lazy" width="1265" height="713" alt="Diagnostics"></div>
-    </div>
-
-    <div class="feature">
-      <div class="text">
-        <div class="tag">WinCC</div>
-        <h3><span lang="zh">内置 WinCC V7 / V8 对象模型</span><span lang="en">WinCC V7 / V8 built in</span></h3>
-        <p><span lang="zh">在软件内部运行、没有注册类型库的脚本，也能补全：<code>HMIRuntime.Tags("x").Read</code>、事件过程里的 <code>Item.</code>……其他软件可以用 <code>*.vbstypes.json</code> 自己描述。</span>
-           <span lang="en">Scripts that run inside an application get completion too: <code>HMIRuntime.Tags("x").Read</code>, <code>Item.</code> in event procedures… Describe other applications with <code>*.vbstypes.json</code>.</span></p>
-      </div>
-      <div class="media"><img src="images/wincc.gif" loading="lazy" width="1265" height="713" alt="WinCC"></div>
-    </div>
-
-    <div class="feature">
-      <div class="text">
-        <div class="tag">Code Library</div>
-        <h3><span lang="zh">代码库</span><span lang="en">Code Library</span></h3>
-        <p><span lang="zh">示例脚本随时预览、插入；把常用代码存成自己的片段，输入缩写就能展开。</span>
-           <span lang="en">Preview and insert sample scripts; keep your own snippets and expand them with a shortcut.</span></p>
-      </div>
-      <div class="media"><img src="images/library.gif" loading="lazy" width="1265" height="713" alt="Code Library"></div>
-    </div>
-
-    <div class="feature">
-      <div class="text">
-        <div class="tag">Encoding</div>
-        <h3><span lang="zh">不再乱码</span><span lang="en">No more garbled text</span></h3>
-        <p><span lang="zh">cscript 只认 ANSI 和 UTF-16。ANSI 脚本自动用系统代码页打开；含中文的 UTF-8 脚本会提示一键另存。脚本宿主本身支持中文、日文甚至 emoji 的输入输出。</span>
-           <span lang="en">cscript only reads ANSI and UTF-16. ANSI scripts reopen with the system code page; UTF-8 scripts with non-ASCII text get a one-click fix. The script host itself reads and writes any Unicode, emoji included.</span></p>
-      </div>
-      <div class="media"><img src="images/encoding.gif" loading="lazy" width="1265" height="713" alt="Encoding"></div>
-    </div>
-  </div>
-</section>
-
-<section class="how" id="how">
-  <div class="wrap">
-    <h2><span lang="zh">它是怎么做到的</span><span lang="en">How it works</span></h2>
-    <p class="sub"><span lang="zh">三段动画，讲清楚背后的三件事。</span><span lang="en">Three short animations, three pieces of the puzzle.</span></p>
-    <div class="cards">
-      <div class="card">
-        <video controls muted playsinline preload="none" poster="images/poster-typelib.jpg" src="videos/typelib-inference.mp4"></video>
-        <div class="body">
-          <h3><span lang="zh">类型库 + 类型推断</span><span lang="en">Type libraries + inference</span></h3>
-          <p><span lang="zh">从 ProgID 找到注册表里的类型库，读出成员；再顺着代码推断：<code>fso → Folder → Files → File</code>。</span>
-             <span lang="en">From a ProgID to the registered type library and its members, then along your code: <code>fso → Folder → Files → File</code>.</span></p>
+<section class="term-sec" id="terminal">
+  <div class="term-stick">
+    <div class="wrap">
+      <div class="term" id="term" role="group" aria-label="Terminal">
+        <div class="term-bar"><i></i><i></i><i></i><span id="termTitle">zach@home: ~</span></div>
+        <div class="term-body" id="termBody">
+          <div id="termOut"></div>
+          <div class="term-line"><span id="termPs"></span><input id="termIn" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Terminal input"></div>
         </div>
+        <canvas id="termFx" hidden aria-hidden="true"></canvas>
       </div>
-      <div class="card">
-        <video controls muted playsinline preload="none" poster="images/poster-syntax.jpg" src="videos/syntax-check.mp4"></video>
-        <div class="body">
-          <h3><span lang="zh">只编译、不运行</span><span lang="en">Compiled, never run</span></h3>
-          <p><span lang="zh">语法检查直接调用 vbscript.dll 的解析器，引擎从不进入运行状态。</span>
-             <span lang="en">The syntax check calls vbscript.dll's own parser; the engine is never started.</span></p>
-        </div>
+      <div class="dots" role="group" aria-label="Sections">
+        <button type="button" data-scene="0" aria-label="neofetch"></button>
+        <button type="button" data-scene="1" aria-label="about"></button>
+        <button type="button" data-scene="2" aria-label="notes"></button>
+        <button type="button" data-scene="3" aria-label="projects"></button>
+        <button type="button" data-scene="4" aria-label="contact"></button>
       </div>
-      <div class="card">
-        <video controls muted playsinline preload="none" poster="images/poster-host.jpg" src="videos/script-host.mp4"></video>
-        <div class="body">
-          <h3><span lang="zh">重写的脚本宿主</span><span lang="en">A rewritten script host</span></h3>
-          <p><span lang="zh">加载系统的 vbscript.dll，从零实现 WScript 对象，与 cscript 逐项对照测试；Native AOT 编译，x64 / x86 两个版本。</span>
-             <span lang="en">Loads the system's vbscript.dll with a WScript object written from scratch and tested against cscript; Native AOT, x64 and x86.</span></p>
-        </div>
-      </div>
+      <p class="term-hint">
+        <span lang="zh">往下滚就行，也可以点圆点，或者自己敲命令（比如 <code>help</code>）</span>
+        <span lang="en">Just scroll, click the dots, or type a command (try <code>help</code>)</span>
+      </p>
     </div>
   </div>
 </section>
 
-<section id="video">
-  <div class="wrap">
-    <h2><span lang="zh">介绍视频</span><span lang="en">Video</span></h2>
-    <p class="sub"><span lang="zh">六分钟看完全部功能和实现思路。</span><span lang="en">All the features and the ideas behind them (in Chinese).</span></p>
-    <!-- After publishing on Bilibili: put the BV id in data-bvid, e.g. data-bvid="BV1xx411c7mD" -->
-    <div class="player" id="player" data-bvid="BV13SaG6gEZw">
-      <div class="soon">
-        <b lang="zh">视频即将发布</b><b lang="en">Coming soon</b>
-        <span lang="zh">敬请关注 B 站</span><span lang="en">on Bilibili</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="how" id="install">
-  <div class="wrap">
-    <h2><span lang="zh">安装</span><span lang="en">Install</span></h2>
-    <p class="sub"><span lang="zh">一分钟装好，不需要另外安装 .NET。</span><span lang="en">One minute; no .NET or anything else to install.</span></p>
-    <div class="steps">
-      <div class="step">
-        <b lang="zh">打开扩展视图</b><b lang="en">Open Extensions</b>
-        <p lang="zh">在 VS Code 中按 Ctrl+Shift+X。</p><p lang="en">Press Ctrl+Shift+X in VS Code.</p>
-      </div>
-      <div class="step">
-        <b lang="zh">搜索 VbsTools</b><b lang="en">Search for VbsTools</b>
-        <p lang="zh">点击安装。或者在命令行里：</p><p lang="en">Click Install. Or from a command line:</p>
-        <pre>code --install-extension zach-shen.vbstools-vbscript</pre>
-      </div>
-      <div class="step">
-        <b lang="zh">打开一个 .vbs 文件</b><b lang="en">Open a .vbs file</b>
-        <p lang="zh">按 F5 调试，Ctrl+F5 运行。欢迎页里有一步步的上手引导。</p>
-        <p lang="en">F5 debugs, Ctrl+F5 runs. The Welcome page has a step-by-step walkthrough.</p>
-      </div>
-    </div>
-    <div class="faq">
-      <p lang="zh"><b>.vbs 被识别成 "Visual Basic"？</b> VS Code 自带的 Visual Basic 支持也会认领 .vbs，在设置里加上：</p>
-      <p lang="en"><b>.vbs opens as "Visual Basic"?</b> VS Code's built-in Visual Basic support also claims .vbs. Add to your settings:</p>
-      <pre>"files.associations": { "*.vbs": "vbscript" }</pre>
-      <p lang="zh" style="margin-top:20px">遇到问题或有建议，欢迎到 <a href="https://github.com/ZachShen99/VbsTools/issues">GitHub Issues</a> 反馈。</p>
-      <p lang="en" style="margin-top:20px">Problems or ideas? <a href="https://github.com/ZachShen99/VbsTools/issues">GitHub Issues</a>.</p>
-    </div>
-  </div>
-</section>
+<noscript>
+  <main class="wrap ns" style="padding:20vh 0 12vh">
+    <h2 style="margin:0 0 20px">Zach</h2>
+    <p>做 VS Code 插件和安卓应用。 VS Code extensions and an Android app.</p>
+    <ul>
+      <li><a href="vbstools/">VbsTools</a> — VBScript for VS Code</li>
+      <li><a href="https://marketplace.visualstudio.com/items?itemName=zach-shen.tcl-tools">Tcl Tools</a> — Tcl for VS Code</li>
+      <li><a href="https://github.com/ZachShen99/DaysEngineForAndroid">DaysEngine for Android</a></li>
+    </ul>
+    <p><a href="https://github.com/ZachShen99">GitHub @ZachShen99</a></p>
+  </main>
+</noscript>
 
 <footer>
-  <div class="wrap">
-    <span>© 2026 Zach Shen · MIT License</span>
-    <div class="right">
-      <a href="https://marketplace.visualstudio.com/items?itemName=zach-shen.vbstools-vbscript">Marketplace</a>
-      <a href="https://github.com/ZachShen99/VbsTools">GitHub</a>
-    </div>
-  </div>
+  <div class="wrap">© 2026 Zach</div>
 </footer>
 
 <script>
 (function () {
   var root = document.documentElement, btn = document.getElementById("lang");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* start the signature once the font is there, so it is never drawn in a fallback face */
+  var sig = document.getElementById("sig");
+  function startSig() { sig.classList.add("go"); }
+  if (document.fonts && document.fonts.load) {
+    Promise.race([document.fonts.load("400 100px Vice", "Zach"), new Promise(function (r) { setTimeout(r, 1500); })]).then(startSig, startSig);
+  } else startSig();
+
+  /* language */
   function set(lang) {
     root.dataset.lang = lang;
     root.lang = lang === "zh" ? "zh-CN" : "en";
     btn.textContent = lang === "zh" ? "English" : "中文";
     try { localStorage.setItem("lang", lang); } catch (e) {}
+    update();
   }
   var saved = null;
   try { saved = localStorage.getItem("lang"); } catch (e) {}
   var q = new URLSearchParams(location.search).get("lang");
-  set(q === "en" || q === "zh" ? q : saved || ((navigator.language || "").toLowerCase().indexOf("zh") === 0 ? "zh" : "en"));
-  btn.addEventListener("click", function () { set(root.dataset.lang === "zh" ? "en" : "zh"); });
+  var initial = q === "en" || q === "zh" ? q : saved || ((navigator.language || "").toLowerCase().indexOf("zh") === 0 ? "zh" : "en");
 
-  // Bilibili player once the BV id is filled in.
-  var player = document.getElementById("player"), bvid = player.dataset.bvid;
-  if (bvid) {
-    player.innerHTML = '<iframe src="https://player.bilibili.com/player.html?bvid=' + encodeURIComponent(bvid) +
-      '&page=1&autoplay=0&high_quality=1" allowfullscreen loading="lazy"></iframe>';
+  var nav = document.getElementById("nav"), heroIn = document.getElementById("heroIn");
+  var ticking = false, avatarFrame = null;
+
+  function update() {
+    ticking = false;
+    var vh = window.innerHeight, y = window.scrollY;
+    nav.classList.toggle("scrolled", y > 8);
+
+    if (!reduce) {
+      if (avatarFrame) avatarFrame(Math.min(1, y / (vh * 0.7)));
+      var p = Math.min(1, Math.max(0, y / (vh * 0.8)));
+      heroIn.style.opacity = String(1 - p * 1.15 < 0 ? 0 : 1 - p * 1.15);
+      heroIn.style.transform = "scale(" + (1 - p * 0.18) + ")";
+    }
   }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+
+  btn.addEventListener("click", function () { set(root.dataset.lang === "zh" ? "en" : "zh"); });
+  set(initial);
+
+  /* Avatar explosion + particle network. While the hero scrolls away, the avatar bursts into
+     particles; a few of them survive, drift around the page and link up with lines when they come
+     close, and the mouse links to nearby ones. The maths and drawing run in WebAssembly
+     (wasm/avatar.wasm, source in wasm/src/lib.rs). If anything fails, the plain <img> stays. */
+  (function () {
+    if (reduce || !window.WebAssembly) return;
+    var cv = document.getElementById("avatarCv"), img = document.querySelector("#avatar img");
+    fetch("wasm/avatar.wasm").then(function (r) { return r.arrayBuffer(); })
+      .then(function (b) { return WebAssembly.instantiate(b, {}); })
+      .then(function (res) {
+        var x = res.instance.exports;
+        return (img.decode ? img.decode() : Promise.resolve()).then(function () { return x; });
+      })
+      .then(function (x) {
+        var G = x.grid(), N = G * G;
+        var off = document.createElement("canvas"); off.width = off.height = G;
+        var octx = off.getContext("2d");
+        octx.drawImage(img, 0, 0, G, G);
+        var px = octx.getImageData(0, 0, G, G).data, c = (G - 1) / 2;
+        for (var i = 0; i < N; i++) {                      /* keep a circle, drop the corners */
+          var dx = i % G - c, dy = Math.floor(i / G) - c;
+          px[i * 4 + 3] = dx * dx + dy * dy <= (G / 2) * (G / 2) && px[i * 4 + 3] > 127 ? 255 : 0;
+        }
+        x.init();
+        new Uint8ClampedArray(x.memory.buffer, x.colors_ptr(), N * 4).set(px);
+        x.setup();
+
+        var ctx = cv.getContext("2d"), W = 0, H = 0, sc = 1, frameData = null;
+        function size() {
+          sc = Math.min(window.devicePixelRatio || 1, 2, x.max_width() / window.innerWidth, x.max_height() / window.innerHeight);
+          W = Math.round(window.innerWidth * sc); H = Math.round(window.innerHeight * sc);
+          cv.width = W; cv.height = H; last = 0;           /* resizing clears the canvas: redraw at once */
+          frameData = new ImageData(new Uint8ClampedArray(x.memory.buffer, x.fb_ptr(), W * H * 4), W, H);
+        }
+        size();
+        window.addEventListener("resize", size);
+
+        var mx = -1e4, my = -1e4, t = 0, looping = false, last = 0;
+        window.addEventListener("pointermove", function (e) { mx = e.clientX * sc; my = e.clientY * sc; }, { passive: true });
+        window.addEventListener("pointerup", function (e) { if (e.pointerType !== "mouse") mx = my = -1e4; }, { passive: true });
+        document.addEventListener("mouseleave", function () { mx = my = -1e4; });
+        window.addEventListener("blur", function () { mx = my = -1e4; });
+
+        function draw(now) {
+          if (t <= 0) { looping = false; return; }
+          requestAnimationFrame(draw);
+          var gap = now - last;
+          if (gap < (t >= 1 ? 22 : 12)) return;            /* ~45 fps once only the network is left */
+          last = now;
+          x.net_step(t, W, H, Math.min(3, gap / 16.67), sc);
+          var r = img.getBoundingClientRect();
+          x.render(t, W, H, (r.left + r.width / 2) * sc, (r.top + r.height / 2) * sc, r.width * sc, mx, my, sc);
+          ctx.putImageData(frameData, 0, 0);
+        }
+
+        avatarFrame = function (p) {
+          t = p;
+          if (p <= 0) { cv.hidden = true; img.style.opacity = "1"; return; }
+          var f = Math.min(1, p / 0.04);                   /* crossfade <img> -> particles */
+          cv.style.opacity = String(f); img.style.opacity = String(1 - f);
+          cv.hidden = false;
+          if (!looping) { looping = true; requestAnimationFrame(draw); }
+        };
+        update();
+      })
+      .catch(function () { /* keep the static image */ });
+  })();
 })();
 </script>
+<script src="terminal.js" defer></script>
 </body>
 </html>

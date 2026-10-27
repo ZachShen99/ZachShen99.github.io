@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VbsTools · VBScript for VS Code</title>
+<meta name="description" content="VbsTools：给 VBScript 用的 VS Code 插件。认 COM 对象的补全、能打断点的调试器、兼容 cscript 的脚本宿主。免费。 / A free VS Code extension for VBScript: COM completion, a debugger and a cscript-compatible script host.">
+<meta property="og:title" content="VbsTools · VBScript for VS Code">
+<meta property="og:description" content="给 VBScript 用的 VS Code 插件：COM 补全、断点调试、兼容 cscript 的脚本宿主。免费。 / A free VS Code extension for VBScript.">
+<meta property="og:image" content="https://zachshen99.github.io/images/og.jpg">
+<meta property="og:url" content="https://zachshen99.github.io/vbstools/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://zachshen99.github.io/vbstools/">
+<link rel="icon" href="../images/icon.png">
+<script>document.documentElement.classList.add("js");</script>
+<style>
+:root {
+  --bg: #fbfbfd;
+  --bg2: #f5f5f7;
+  --card: #fff;
+  --text: #1d1d1f;
+  --dim: #86868b;
+  --line: #d2d2d7;
+  --accent: #0071e3;
+  --code: #ececf0;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #000; --bg2: #161617; --card: #1c1c1e; --text: #f5f5f7; --dim: #86868b; --line: #424245; --accent: #2997ff; --code: #2a2a2d; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; text-decoration: none; }
+img, video { display: block; max-width: 100%; height: auto; }
+code { font-family: var(--mono); font-size: .9em; background: var(--code); padding: .1em .4em; border-radius: 6px; }
+
+/* every text exists twice; show the active language only */
+html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: none !important; }
+
+.wrap { width: min(980px, 100% - 48px); margin: 0 auto; }
+
+/* the author's name, same as the home page (font: Mr Dafoe, SIL OFL, subset) */
+@font-face { font-family: "Vice"; src: url(../fonts/mr-dafoe-zach.woff2) format("woff2"); font-display: swap; unicode-range: U+20, U+27, U+41, U+43, U+48, U+5a, U+61, U+63, U+65, U+67-68, U+6d, U+6f-70, U+73, U+7a; }
+.vice { font-family: "Vice", "Mr Dafoe", "Brush Script MT", "Segoe Script", cursive; font-weight: 400; letter-spacing: 0;
+  background: linear-gradient(180deg, #ff5fb0 12%, #ff9a62 88%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(.035em .035em 0 #00e5ff) drop-shadow(0 0 .12em rgba(255, 46, 147, .65)); }
+
+/* nav */
+nav { position: fixed; inset: 0 0 auto; z-index: 10; height: 52px; background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid transparent; transition: border-color .3s; }
+nav.scrolled { border-bottom-color: var(--line); }
+nav .wrap { height: 100%; display: flex; align-items: center; gap: 26px; font-size: 13px; }
+.brand { font-size: 28px; line-height: 1; padding: 0 .1em .08em 0; white-space: nowrap; }
+.links { display: flex; gap: 26px; margin-left: auto; }
+.links a, .lang { color: var(--dim); transition: color .2s; }
+.links a:hover, .lang:hover { color: var(--text); }
+.lang { background: none; border: 0; font: inherit; cursor: pointer; padding: 0; }
+
+/* hero */
+.hero { position: relative; padding: 130px 0 40px; text-align: center; overflow: hidden; }
+.hero::before { content: ""; position: absolute; inset: 0 8% 30%; z-index: -1; pointer-events: none; filter: blur(50px);
+  background: radial-gradient(closest-side at 32% 40%, rgba(255, 46, 147, .16), transparent 70%), radial-gradient(closest-side at 70% 36%, rgba(0, 229, 255, .12), transparent 70%); }
+.appicon { width: 88px; height: 88px; border-radius: 20px; margin: 0 auto 22px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
+.eyebrow { color: var(--dim); font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+h1 { margin: 0; font-size: clamp(56px, 11vw, 120px); line-height: 1.02; font-weight: 700; letter-spacing: -.045em; }
+.sub1 { margin: 10px 0 0; font-size: clamp(24px, 4vw, 40px); font-weight: 600; letter-spacing: -.02em; }
+.lead { margin: 22px auto 0; max-width: 680px; font-size: clamp(17px, 2.1vw, 21px); color: var(--dim); }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
+.btn { display: inline-block; font-size: 16px; padding: 11px 24px; border-radius: 980px; border: 1px solid var(--line); transition: opacity .2s, border-color .2s; }
+.btn:hover { border-color: var(--dim); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { opacity: .88; }
+.note { margin-top: 16px; font-size: 14px; color: var(--dim); }
+.shot { margin: 56px auto 0; max-width: 1100px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0, 0, 0, .35); transform-origin: 50% 0; will-change: transform; }
+
+/* sections */
+section { padding: 14vh 0 4vh; }
+.kicker { font-size: 15px; font-weight: 600; color: var(--dim); margin: 0 0 12px; }
+h2 { margin: 0 0 14px; font-size: clamp(34px, 5.5vw, 60px); line-height: 1.08; letter-spacing: -.035em; }
+.sub { margin: 0 0 8vh; max-width: 640px; font-size: clamp(17px, 2vw, 21px); color: var(--dim); }
+
+.feature { display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; margin-bottom: 14vh; }
+.feature:nth-child(even) .text { order: 2; }
+.feature > * { min-width: 0; }
+.tag { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+.feature h3 { margin: 0 0 14px; font-size: clamp(26px, 3.4vw, 36px); line-height: 1.15; letter-spacing: -.025em; }
+.feature p { margin: 0 0 14px; color: var(--dim); font-size: 17px; }
+.feature ul { margin: 0; padding-left: 1.1em; color: var(--dim); font-size: 17px; }
+.feature li { margin: 6px 0; }
+.media { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 20px 50px rgba(0, 0, 0, .25); background: #1e1e1e; }
+
+.band { background: var(--bg2); padding: 14vh 0; margin-top: 6vh; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.card video { width: 100%; aspect-ratio: 16 / 9; background: #1e1e1e; }
+.card .body { padding: 20px 22px 24px; }
+.card h3 { margin: 0 0 8px; font-size: 20px; letter-spacing: -.015em; }
+.card p { margin: 0; color: var(--dim); font-size: 15px; }
+
+.player { position: relative; aspect-ratio: 16 / 9; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--bg2); }
+.player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.soon { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 6px; color: var(--dim); }
+.soon b { color: var(--text); font-size: 22px; }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: s; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px; min-width: 0; }
+.step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; margin-bottom: 12px; }
+.step b { display: block; margin-bottom: 6px; font-size: 17px; }
+.step p { margin: 0; color: var(--dim); font-size: 15px; }
+pre { background: var(--code); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; margin: 12px 0 0; }
+.faq { margin-top: 44px; color: var(--dim); }
+.faq b { color: var(--text); }
+.faq a { color: var(--accent); }
+
+footer { border-top: 1px solid var(--line); margin-top: 12vh; padding: 20px 0 28px; color: var(--dim); font-size: 12px; position: relative; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
+footer .right { margin-left: auto; display: flex; gap: 18px; }
+footer a:hover { color: var(--text); }
+
+/* scroll reveal (only when JS runs) */
+.js .reveal { opacity: 0; transform: translateY(40px); transition: opacity .9s cubic-bezier(.2, .7, .2, 1), transform .9s cubic-bezier(.2, .7, .2, 1); transition-delay: var(--d, 0s); }
+.js .reveal.in { opacity: 1; transform: none; }
+
+@media (max-width: 860px) {
+  .links a:not(.keep) { display: none; }
+  .hero { padding-top: 110px; }
+  .feature { grid-template-columns: 1fr; gap: 24px; margin-bottom: 10vh; }
+  .feature:nth-child(even) .text { order: 0; }
+  .cards, .steps { grid-template-columns: 1fr; }
+  footer .right { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .js .reveal { opacity: 1; transform: none; transition: none; }
+  .shot { will-change: auto; }
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="wrap">
+    <a class="brand vice" href="../">Zach's homepage</a>
+    <div class="links">
+      <a href="#features"><span lang="zh">功能</span><span lang="en">Features</span></a>
+      <a href="#how"><span lang="zh">原理</span><span lang="en">How it works</span></a>
+      <a href="#video"><span lang="zh">视频</span><span lang="en">Video</span></a>
+      <a href="#install"><span lang="zh">安装</span><span lang="en">Install</span></a>
+      <a class="keep" href="https://github.com/ZachShen99/VbsTools">GitHub</a>
+    </div>
+    <button class="lang" id="lang" type="button">English</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <img class="appicon" src="../images/icon.png" width="88" height="88" alt="">
+    <p class="eyebrow"><span lang="zh">VS Code 插件 · 免费</span><span lang="en">A free VS Code extension</span></p>
+    <h1>VbsTools</h1>
+    <p class="sub1"><span lang="zh">VBScript，也能打断点。</span><span lang="en">VBScript, with breakpoints.</span></p>
+    <p class="lead">
+      <span lang="zh">给 VBScript 做的 VS Code 插件。认 COM 对象的补全，能下断点调试，脚本跑在一个兼容 cscript 的宿主里。维护老脚本、做自动化、写 WinCC 脚本的人用得上。</span>
+      <span lang="en">A VS Code extension for VBScript. It completes COM objects, lets you set breakpoints, and runs scripts in a cscript-compatible host. Handy if you maintain old scripts, do automation, or write WinCC scripts.</span>
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://marketplace.visualstudio.com/items?itemName=zach-shen.vbstools-vbscript"><span lang="zh">在 Marketplace 安装</span><span lang="en">Get it on the Marketplace</span></a>
+      <a class="btn" href="vscode:extension/zach-shen.vbstools-vbscript"><span lang="zh">在 VS Code 里打开</span><span lang="en">Open in VS Code</span></a>
+      <a class="btn" href="https://github.com/ZachShen99/VbsTools">GitHub</a>
+    </div>
+    <p class="note"><span lang="zh">只支持 Windows，语法高亮在别的系统上也能用。</span><span lang="en">Windows only. Syntax highlighting works anywhere.</span></p>
+    <img class="shot" id="shot" src="../images/hero-debug-excel.jpg" width="1600" height="940" alt="Debugging a VBScript that drives Excel: breakpoint, variables and the Excel window">
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <p class="kicker reveal"><span lang="zh">功能</span><span lang="en">Features</span></p>
+    <h2 class="reveal"><span lang="zh">写、查、跑、调，<br>都在 VS Code 里。</span><span lang="en">Write, check, run and debug,<br>all in VS Code.</span></h2>
+    <p class="sub reveal"><span lang="zh">下面这些都是日常会用到的。</span><span lang="en">The stuff you will actually use day to day.</span></p>
+
+    <div class="features">
+      <div class="feature">
+        <div class="text reveal">
+          <div class="tag">IntelliSense</div>
+          <h3><span lang="zh">COM 对象的补全</span><span lang="en">COM object completion</span></h3>
+          <p><span lang="zh">直接读你电脑上注册的类型库。输入 <code>CreateObject("</code> 会列出所有 ProgID，对象后面能补出方法和属性。</span>
+             <span lang="en">It reads the type libraries registered on your machine. <code>CreateObject("</code> lists every ProgID, and objects complete their methods and properties.</span></p>
+          <ul>
+            <li lang="zh">链式调用、<code>For Each</code>、<code>With</code>、默认成员、函数返回值，类型都能顺着推下去</li>
+            <li lang="en">Types follow through chains, <code>For Each</code>, <code>With</code>, default members and return values</li>
+            <li lang="zh">有参数提示和悬停说明</li>
+            <li lang="en">Parameter info and hover docs</li>
+            <li lang="zh">推断不出来的地方，用 <code>' @type</code> 注释告诉它</li>
+            <li lang="en">Where inference can't tell, add a <code>' @type</code> comment</li>
+          </ul>
+        </div>
+        <div class="media reveal" style="--d:.1s"><img src="../images/intellisense.gif" loading="lazy" width="1265" height="735" alt="COM IntelliSense"></div>
+      </div>
+
+      <div class="feature">
+        <div class="text reveal">
+          <div class="tag">Debugger</div>
+          <h3><span lang="zh">能下断点的调试器</span><span lang="en">A debugger with breakpoints</span></h3>
+          <p><span lang="zh">按 F5 就能调，不用写 launch.json。</span><span lang="en">Press F5. No launch.json to write.</span></p>
+          <ul>
+            <li lang="zh">条件断点、命中次数、日志点；单步进入、跳过、跳出</li>
+            <li lang="en">Conditional breakpoints, hit counts, logpoints; step in, over and out</li>
+            <li lang="zh">变量、监视、调用栈；COM 对象能一层层展开</li>
+            <li lang="en">Variables, watch and call stack; COM objects expand level by level</li>
+            <li lang="zh">变量可以双击改值，调试控制台也有补全</li>
+            <li lang="en">Double-click a variable to change it; the Debug Console completes too</li>
+          </ul>
+        </div>
+        <div class="media reveal" style="--d:.1s"><img src="../images/debug.gif" loading="lazy" width="1265" height="713" alt="Debugging"></div>
+      </div>
+
+      <div class="feature">
+        <div class="text reveal">
+          <div class="tag">Diagnostics</div>
+          <h3><span lang="zh">边写边查错</span><span lang="en">Errors as you type</span></h3>
+          <p><span lang="zh">语法错误交给系统自带的 vbscript.dll 去编译（只编译，不运行），所以报的错和真跑的时候一样。</span>
+             <span lang="en">Syntax errors come from the system's own vbscript.dll, which only compiles and never runs your script, so they match what a real run reports.</span></p>
+          <ul>
+            <li lang="zh">没声明的变量、不存在的过程、参数个数不对、没用到的变量</li>
+            <li lang="en">Undeclared variables, unknown procedures, wrong argument counts, unused variables</li>
+            <li lang="zh">Ctrl+. 一键修复；F12 转到定义，Shift+F12 找引用，F2 重命名</li>
+            <li lang="en">Ctrl+. quick fixes; F12 go to definition, Shift+F12 find references, F2 rename</li>
+          </ul>
+        </div>
+        <div class="media reveal" style="--d:.1s"><img src="../images/diagnostics.gif" loading="lazy" width="1265" height="713" alt="Diagnostics"></div>
+      </div>
+
+      <div class="feature">
+        <div class="text reveal">
+          <div class="tag">WinCC</div>
+          <h3><span lang="zh">自带 WinCC V7 / V8 对象模型</span><span lang="en">WinCC V7 / V8 built in</span></h3>
+          <p><span lang="zh">有些脚本跑在软件内部，本机没有注册类型库。WinCC 的我已经内置了，<code>HMIRuntime.Tags("x").Read</code>、事件过程里的 <code>Item.</code> 都能补全。别的软件可以自己写一个 <code>*.vbstypes.json</code> 来描述。</span>
+             <span lang="en">Some scripts run inside another application, with no type library on your machine. WinCC is built in, so <code>HMIRuntime.Tags("x").Read</code> and <code>Item.</code> in event procedures complete. For other applications, describe them in a <code>*.vbstypes.json</code> file.</span></p>
+        </div>
+        <div class="media reveal" style="--d:.1s"><img src="../images/wincc.gif" loading="lazy" width="1265" height="713" alt="WinCC"></div>
+      </div>
+
+      <div class="feature">
+        <div class="text reveal">
+          <div class="tag">Code Library</div>
+          <h3><span lang="zh">代码库</span><span lang="en">Code library</span></h3>
+          <p><span lang="zh">示例脚本可以先预览再插入。常用的代码存成自己的片段，输个缩写就展开。</span>
+             <span lang="en">Preview sample scripts before inserting them. Save the code you reuse as snippets and expand them with a short trigger.</span></p>
+        </div>
+        <div class="media reveal" style="--d:.1s"><img src="../images/library.gif" loading="lazy" width="1265" height="713" alt="Code Library"></div>
+      </div>
+
+      <div class="feature">
+        <div class="text reveal">
+          <div class="tag">Encoding</div>
+          <h3><span lang="zh">不再乱码</span><span lang="en">No more garbled text</span></h3>
+          <p><span lang="zh">cscript 只认 ANSI 和 UTF-16。ANSI 的脚本会按系统代码页打开；带中文的 UTF-8 脚本，会提示你一键另存。自带的脚本宿主输入输出中文、日文、emoji 都没问题。</span>
+             <span lang="en">cscript only reads ANSI and UTF-16. ANSI scripts open with the system code page, and UTF-8 scripts with non-ASCII text get a one-click re-save. The bundled script host reads and writes any Unicode, emoji included.</span></p>
+        </div>
+        <div class="media reveal" style="--d:.1s"><img src="../images/encoding.gif" loading="lazy" width="1265" height="713" alt="Encoding"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="how">
+  <div class="wrap">
+    <p class="kicker reveal"><span lang="zh">原理</span><span lang="en">How it works</span></p>
+    <h2 class="reveal"><span lang="zh">它是怎么做的</span><span lang="en">How it's built</span></h2>
+    <p class="sub reveal"><span lang="zh">三段小动画，各讲一件事。</span><span lang="en">Three short animations, one idea each.</span></p>
+    <div class="cards">
+      <div class="card reveal">
+        <video controls muted playsinline preload="none" poster="../images/poster-typelib.jpg" src="../videos/typelib-inference.mp4"></video>
+        <div class="body">
+          <h3><span lang="zh">类型库 + 类型推断</span><span lang="en">Type libraries + inference</span></h3>
+          <p><span lang="zh">从 ProgID 找到注册表里的类型库，读出里面的成员，再顺着你的代码往下推：<code>fso → Folder → Files → File</code>。</span>
+             <span lang="en">From a ProgID to the registered type library and its members, then along your code: <code>fso → Folder → Files → File</code>.</span></p>
+        </div>
+      </div>
+      <div class="card reveal" style="--d:.1s">
+        <video controls muted playsinline preload="none" poster="../images/poster-syntax.jpg" src="../videos/syntax-check.mp4"></video>
+        <div class="body">
+          <h3><span lang="zh">只编译，不运行</span><span lang="en">Compile, never run</span></h3>
+          <p><span lang="zh">语法检查直接调 vbscript.dll 的解析器，脚本引擎根本不会启动。</span>
+             <span lang="en">The syntax check calls vbscript.dll's own parser. The script engine is never started.</span></p>
+        </div>
+      </div>
+      <div class="card reveal" style="--d:.2s">
+        <video controls muted playsinline preload="none" poster="../images/poster-host.jpg" src="../videos/script-host.mp4"></video>
+        <div class="body">
+          <h3><span lang="zh">自己写的脚本宿主</span><span lang="en">My own script host</span></h3>
+          <p><span lang="zh">cscript 没有调试接口，所以我从头写了一个兼容的宿主：加载系统的 vbscript.dll，WScript 对象自己实现，和 cscript 逐项对照测过（Native AOT，x64 / x86 各一个）。调试时在每条语句前插一个钩子，行号不变，脚本里的 On Error 处理不受影响。</span>
+             <span lang="en">cscript has no debugging interface, so I wrote a compatible host: it loads the system's vbscript.dll, implements WScript from scratch and was tested against cscript (Native AOT, x64 and x86). Debugging puts a hook before every statement, so line numbers stay put and your On Error handling is left alone.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="video">
+  <div class="wrap">
+    <p class="kicker reveal"><span lang="zh">视频</span><span lang="en">Video</span></p>
+    <h2 class="reveal"><span lang="zh">看视频也行</span><span lang="en">Or watch it</span></h2>
+    <p class="sub reveal"><span lang="zh">六分钟，把功能和做法过一遍。</span><span lang="en">Six minutes on the features and how it works (in Chinese).</span></p>
+    <!-- After publishing on Bilibili: put the BV id in data-bvid, e.g. data-bvid="BV1xx411c7mD" -->
+    <div class="player reveal" id="player" data-bvid="BV13SaG6gEZw">
+      <div class="soon">
+        <b lang="zh">视频还没发</b><b lang="en">Coming soon</b>
+        <span lang="zh">发了会放在 B 站</span><span lang="en">It will be on Bilibili</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <p class="kicker reveal"><span lang="zh">安装</span><span lang="en">Install</span></p>
+    <h2 class="reveal"><span lang="zh">一分钟装好</span><span lang="en">Set up in a minute</span></h2>
+    <p class="sub reveal"><span lang="zh">不用另外装 .NET。</span><span lang="en">No .NET or anything else to install.</span></p>
+    <div class="steps">
+      <div class="step reveal">
+        <b lang="zh">打开扩展面板</b><b lang="en">Open Extensions</b>
+        <p lang="zh">在 VS Code 里按 Ctrl+Shift+X。</p><p lang="en">Press Ctrl+Shift+X in VS Code.</p>
+      </div>
+      <div class="step reveal" style="--d:.1s">
+        <b lang="zh">搜 VbsTools，点安装</b><b lang="en">Search VbsTools, click Install</b>
+        <p lang="zh">或者在命令行里：</p><p lang="en">Or from a command line:</p>
+        <pre>code --install-extension zach-shen.vbstools-vbscript</pre>
+      </div>
+      <div class="step reveal" style="--d:.2s">
+        <b lang="zh">打开一个 .vbs 文件</b><b lang="en">Open a .vbs file</b>
+        <p lang="zh">F5 调试，Ctrl+F5 直接运行。欢迎页里有上手引导。</p>
+        <p lang="en">F5 debugs, Ctrl+F5 just runs. The Welcome page has a walkthrough.</p>
+      </div>
+    </div>
+    <div class="faq reveal">
+      <p lang="zh"><b>.vbs 被当成 Visual Basic 了？</b> VS Code 自带的 Visual Basic 支持也会认领 .vbs，在设置里加一行：</p>
+      <p lang="en"><b>.vbs opens as "Visual Basic"?</b> VS Code's built-in Visual Basic support also claims .vbs. Add this to your settings:</p>
+      <pre>"files.associations": { "*.vbs": "vbscript" }</pre>
+      <p lang="zh" style="margin-top:22px">有问题或建议，去 <a href="https://github.com/ZachShen99/VbsTools/issues">GitHub Issues</a> 说就行。</p>
+      <p lang="en" style="margin-top:22px">Problems or ideas? Open an issue on <a href="https://github.com/ZachShen99/VbsTools/issues">GitHub</a>.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Zach · MIT License · <a href="../"><span lang="zh">回首页</span><span lang="en">Home</span></a></span>
+    <div class="right">
+      <a href="https://marketplace.visualstudio.com/items?itemName=zach-shen.vbstools-vbscript">Marketplace</a>
+      <a href="https://github.com/ZachShen99/VbsTools">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement, btn = document.getElementById("lang"), nav = document.getElementById("nav"), shot = document.getElementById("shot");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* language */
+  function set(lang) {
+    root.dataset.lang = lang;
+    root.lang = lang === "zh" ? "zh-CN" : "en";
+    btn.textContent = lang === "zh" ? "English" : "中文";
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+  }
+  var saved = null;
+  try { saved = localStorage.getItem("lang"); } catch (e) {}
+  var q = new URLSearchParams(location.search).get("lang");
+  set(q === "en" || q === "zh" ? q : saved || ((navigator.language || "").toLowerCase().indexOf("zh") === 0 ? "zh" : "en"));
+  btn.addEventListener("click", function () { set(root.dataset.lang === "zh" ? "en" : "zh"); });
+
+  /* nav border + the hero screenshot settling into place while you scroll */
+  var ticking = false;
+  function update() {
+    ticking = false;
+    nav.classList.toggle("scrolled", window.scrollY > 8);
+    if (reduce) return;
+    var r = shot.getBoundingClientRect(), vh = window.innerHeight;
+    var p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.85)));
+    var e = 1 - Math.pow(1 - p, 3);
+    shot.style.transform = "perspective(1400px) rotateX(" + (10 * (1 - e)).toFixed(2) + "deg) scale(" + (0.9 + 0.1 * e).toFixed(3) + ")";
+  }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  update();
+
+  /* reveal on scroll */
+  var items = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window && !reduce) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+    items.forEach(function (el) { io.observe(el); });
+  } else {
+    items.forEach(function (el) { el.classList.add("in"); });
+  }
+
+  /* Bilibili player once the BV id is filled in */
+  var player = document.getElementById("player"), bvid = player.dataset.bvid;
+  if (bvid) {
+    player.innerHTML = '<iframe src="https://player.bilibili.com/player.html?bvid=' + encodeURIComponent(bvid) +
+      '&page=1&autoplay=0&high_quality=1" allowfullscreen loading="lazy"></iframe>';
+  }
+})();
+</script>
+</body>
+</html>
